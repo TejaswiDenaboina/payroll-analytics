@@ -1,0 +1,5 @@
+venv/
+payroll_data.csv
+db_config.py
+__pycache__/
+*.pyc

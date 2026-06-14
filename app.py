@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, dcc, html, Input, Output
+import os
+
 # from db_config import DB_CONFIG
 
 # DB_URL = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
@@ -150,5 +152,11 @@ def update(dept):
 
     return fig1, fig2, fig3, fig4
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8050))
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )

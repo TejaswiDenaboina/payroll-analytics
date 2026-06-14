@@ -1,49 +1,75 @@
 import pandas as pd
-from sqlalchemy import create_engine
+# from sqlalchemy import create_engine
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, dcc, html, Input, Output
-from db_config import DB_CONFIG
+# from db_config import DB_CONFIG
 
-DB_URL = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
-engine = create_engine(DB_URL)
+# DB_URL = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+# engine = create_engine(DB_URL)
 
-def query(sql):
-    return pd.read_sql(sql, engine)
+# def query(sql):
+#     return pd.read_sql(sql, engine)
+df = pd.read_csv("payroll_data.csv")
 
-dept_payroll = query("""
-    SELECT department,
-           ROUND(AVG(net_salary)::numeric,0)  AS avg_salary,
-           ROUND(SUM(net_salary)::numeric,0)  AS total_payroll,
-           COUNT(*)                            AS headcount,
-           ROUND(AVG(overtime_pay)::numeric,0) AS avg_overtime
-    FROM payroll GROUP BY department ORDER BY total_payroll DESC
-""")
+dept_payroll = (
+    df.groupby("department")
+      .agg(
+          avg_salary=("net_salary", "mean"),
+          total_payroll=("net_salary", "sum"),
+          headcount=("department", "count"),
+          avg_overtime=("overtime_pay", "mean")
+      )
+      .reset_index()
+)
 
-monthly = query("""
-    SELECT pay_year, pay_month,
-           ROUND(AVG(net_salary)::numeric,0) AS avg_salary,
-           ROUND(SUM(net_salary)::numeric,0) AS total_payroll
-    FROM payroll GROUP BY pay_year, pay_month ORDER BY pay_year, pay_month
-""")
-monthly['period'] = monthly['pay_year'].astype(str)+'-'+monthly['pay_month'].astype(str).str.zfill(2)
+dept_payroll = dept_payroll.round(0)
+dept_payroll = dept_payroll.sort_values("total_payroll", ascending=False)
 
-role_data = query("""
-    SELECT job_role,
-           ROUND(AVG(base_salary)::numeric,0) AS avg_base,
-           ROUND(AVG(bonus)::numeric,0)       AS avg_bonus,
-           ROUND(AVG(net_salary)::numeric,0)  AS avg_net,
-           COUNT(*)                            AS headcount
-    FROM payroll GROUP BY job_role ORDER BY avg_net DESC
-""")
+monthly = (
+    df.groupby(["pay_year", "pay_month"])
+      .agg(
+          avg_salary=("net_salary", "mean"),
+          total_payroll=("net_salary", "sum")
+      )
+      .reset_index()
+)
 
-overtime = query("""
-    SELECT department, location,
-           SUM(CASE WHEN overtime_flag=1 THEN 1 ELSE 0 END) AS overtime_count,
-           COUNT(*)                                           AS total,
-           ROUND(100.0*SUM(CASE WHEN overtime_flag=1 THEN 1 ELSE 0 END)/COUNT(*),1) AS ot_rate
-    FROM payroll GROUP BY department, location ORDER BY ot_rate DESC
-""")
+monthly = monthly.round(0)
+monthly["period"] = (
+    monthly["pay_year"].astype(str)
+    + "-"
+    + monthly["pay_month"].astype(str).str.zfill(2)
+)
+
+role_data = (
+    df.groupby("job_role")
+      .agg(
+          avg_base=("base_salary", "mean"),
+          avg_bonus=("bonus", "mean"),
+          avg_net=("net_salary", "mean"),
+          headcount=("job_role", "count")
+      )
+      .reset_index()
+)
+
+role_data = role_data.round(0)
+role_data = role_data.sort_values("avg_net", ascending=False)
+
+overtime = (
+    df.groupby(["department", "location"])
+      .agg(
+          overtime_count=("overtime_flag", "sum"),
+          total=("overtime_flag", "count")
+      )
+      .reset_index()
+)
+
+overtime["ot_rate"] = (
+    overtime["overtime_count"] * 100 / overtime["total"]
+).round(1)
+
+overtime = overtime.sort_values("ot_rate", ascending=False)
 
 app = Dash(__name__)
 DEPTS = ['All'] + sorted(dept_payroll['department'].tolist())
@@ -51,12 +77,12 @@ DEPTS = ['All'] + sorted(dept_payroll['department'].tolist())
 app.layout = html.Div([
     html.H1("Payroll Analytics Dashboard",
             style={'fontFamily':'Arial','marginBottom':'8px','fontSize':'22px'}),
-    html.P("SQL-driven analytics on 100,000 payroll records | PostgreSQL + Plotly Dash",
+    html.P("Payroll Analytics Dashboard | Pandas + Plotly Dash",
            style={'color':'#6B7280','marginBottom':'20px','fontSize':'13px'}),
 
     html.Div([
         html.Div([html.P("Total Records", style={'fontSize':'12px','color':'#6B7280','margin':'0'}),
-                  html.P("100,000",style={'fontSize':'22px','fontWeight':'500','margin':'0'})],
+                  html.P(f"{len(df):,}",style={'fontSize':'22px','fontWeight':'500','margin':'0'})],
                  style={'background':'#F3F4F6','borderRadius':'8px','padding':'12px','flex':'1'}),
         html.Div([html.P("Departments",style={'fontSize':'12px','color':'#6B7280','margin':'0'}),
                   html.P(str(len(dept_payroll)),style={'fontSize':'22px','fontWeight':'500','margin':'0'})],

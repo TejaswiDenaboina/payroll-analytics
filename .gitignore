@@ -3,3 +3,5 @@ payroll_data.csv
 db_config.py
 __pycache__/
 *.pyc
+db_config_example.py
+load_db.py

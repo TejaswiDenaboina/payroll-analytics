@@ -1,8 +1,8 @@
 import pandas as pd
 from sqlalchemy import create_engine
-from db_config import DB_CONFIG
+# from db_config import DB_CONFIG
 
-DB_URL = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+DB_URL = "postgresql://username:password@host:5432/dbname"
 engine = create_engine(DB_URL)
 
 def run(label, sql):

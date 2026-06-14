@@ -1,8 +1,14 @@
 import time
 import pandas as pd
-from db_config import get_connection
+import psycopg2
 
-conn = get_connection()
+conn = psycopg2.connect(
+    host="your_host",
+    port=5432,
+    database="your_database",
+    user="your_username",
+    password="your_password"
+)
 cur  = conn.cursor()
 
 def time_query(query, label, runs=3):

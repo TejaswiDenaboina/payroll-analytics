@@ -9,3 +9,4 @@ tqdm==4.68.0
 openpyxl==3.1.5
 matplotlib==3.10.9
 seaborn==0.13.2
+gunicorn==21.2.0

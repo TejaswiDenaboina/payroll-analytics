@@ -74,6 +74,7 @@ overtime["ot_rate"] = (
 overtime = overtime.sort_values("ot_rate", ascending=False)
 
 app = Dash(__name__)
+server = app.server
 DEPTS = ['All'] + sorted(dept_payroll['department'].tolist())
 
 app.layout = html.Div([
@@ -152,6 +153,8 @@ def update(dept):
 
     return fig1, fig2, fig3, fig4
 
+
+import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
